@@ -7,9 +7,12 @@ RUN opm get openresty/lua-resty-mysql
 
 RUN opm list
 
-COPY conf.d /etc/nginx/conf.d
+COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
+COPY conf.d/nginx.conf /etc/nginx/conf.d/nginx.conf
 
 COPY lua /lua
+
+RUN rm -f /etc/nginx/conf.d/default.conf
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

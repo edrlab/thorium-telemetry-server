@@ -112,7 +112,7 @@ print("Timestamp OK");
 
 local ok, err, errcode, sqlstate = db:connect{
 	host = DB_HOST,--"192.168.65.2",
-	port = DB_PORT or 3306,
+	port = tonumber(DB_PORT) or 3306,
 	database = DB_NAME or "telemetry",
 	user = DB_USER or "root",
 	password = DB_PASS or "hello",
