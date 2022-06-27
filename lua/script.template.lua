@@ -120,20 +120,22 @@ if not ok then
 end
 
 local jsonData = json["data"];
-if type(jsonData) ~= "table" then
-	ngx.log(ngx.ERR, string.format("ERROR: no data array in body"));
+print("JSON DATA TYPE", type(jsonData));
+if type(jsonData) ~= "table" or type(jsonData[1]) ~= "table"  then
+	-- ngx.log(ngx.ERR, string.format("ERROR: no data array in body"));
   ngx.status = ngx.HTTP_BAD_REQUEST;
+  ngx.say("ERROR: no data array in body");
   return ngx.exit(ngx.OK);
 end
 
 local queryArgs = {};
 
 for i,dataValue in ipairs(jsonData) do
-  if not type(dataValue["os_version"]) == "string" and
-    not type(dataValue["locale"]) == "string" and
-    not type(dataValue["fresh"]) == "boolean" and
-    not (dataValue["type"] == "poll" or dataValue["type"] == "error") and
-    not type(dataValue["current_version"]) == "string" and
+  if not type(dataValue["os_version"]) == "string" or
+    not type(dataValue["locale"]) == "string" or
+    not type(dataValue["fresh"]) == "boolean" or
+    not (dataValue["type"] == "poll" or dataValue["type"] == "error") or
+    not type(dataValue["current_version"]) == "string" or
     not type(dataValue["prev_version"]) == "string"
   then
 
