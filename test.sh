@@ -2,6 +2,7 @@
 
 
 URL="http://localhost:8080"
+URL="https://thorium-telemetry-server-dev-ahltq7u23a-ew.a.run.app"
 
 
 CMD="curl -s $URL"
@@ -79,7 +80,7 @@ fi
 res=`node hmac.js`
 hmac=`echo $res | cut -d ' ' -f1`
 data=`echo $res | cut -d ' ' -f2-`
-CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" http://localhost:8080"
+CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" $URL"
 NUM=4
 echo $CMD
 eval $CMD >test-$NUM.txt
@@ -100,7 +101,7 @@ fi
 res=`node hmac.js body_bad_timstamp.js`
 hmac=`echo $res | cut -d ' ' -f1`
 data=`echo $res | cut -d ' ' -f2-`
-CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" http://localhost:8080"
+CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" $URL"
 NUM=5
 echo $CMD
 eval $CMD >test-$NUM.txt
@@ -121,7 +122,7 @@ fi
 res=`node hmac.js body_bad_data_array.js`
 hmac=`echo $res | cut -d ' ' -f1`
 data=`echo $res | cut -d ' ' -f2-`
-CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" http://localhost:8080"
+CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" $URL"
 NUM=6
 echo $CMD
 eval $CMD >test-$NUM.txt
@@ -141,7 +142,7 @@ fi
 res=`node hmac.js body_bad_info.js`
 hmac=`echo $res | cut -d ' ' -f1`
 data=`echo $res | cut -d ' ' -f2-`
-CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" http://localhost:8080"
+CMD="curl -H \"Authorization: EDRLAB $hmac\" -d '$data' -s -w \"%{http_code}\n\" $URL"
 NUM=7
 echo $CMD
 eval $CMD >test-$NUM.txt
