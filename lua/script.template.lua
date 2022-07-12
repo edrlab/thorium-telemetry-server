@@ -125,6 +125,7 @@ local queryArgs = {};
 for i,dataValue in ipairs(jsonData) do
   if not type(dataValue["os_version"]) == "string" or
     not type(dataValue["locale"]) == "string" or
+    not type(dataValue["timestamp"]) == "string" or
     not type(dataValue["fresh"]) == "boolean" or
     not (dataValue["type"] == "poll" or dataValue["type"] == "error") or
     not type(dataValue["current_version"]) == "string" or
@@ -138,17 +139,20 @@ for i,dataValue in ipairs(jsonData) do
 
   local osVersion = dataValue["os_version"];
   local locale = dataValue["locale"];
-  local osTs = tsDbFormated;
+  local osTs = dataValue["timestamp"];
   local freshInstall = dataValue["fresh"] and '1' or '0'; -- boolean
   local entryType = dataValue["type"]; -- poll or error
   local currentVersion = dataValue["current_version"];
   local previousVersion = dataValue["prev_version"];
   local newInstall = previousVersion == "null" and '1' or '0';
 
+  local y, M, d, h, m, s, sss = osTs:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
+  local osTsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, M, d, h, m, s);
+
   local str = string.format("(%s, %s, %s, %s, %s, %s, %s, %s)",
       escapeSqlQuery(osVersion),
       escapeSqlQuery(locale),
-      escapeSqlQuery(osTs),
+      escapeSqlQuery(osTsDbFormated),
       escapeSqlQuery(freshInstall),
       escapeSqlQuery(entryType),
       escapeSqlQuery(currentVersion),
