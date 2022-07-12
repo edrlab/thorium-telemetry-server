@@ -32,7 +32,6 @@ if authorizationHeader == nil or authorizationHeader == '' then
 end
 
 local authorizationKey = string.match(authorizationHeader, "EDRLAB (.*)")
--- print(string.format("Authorization key: %s", authorizationKey));
 
 if authorizationKey == nil or authorizationKey == '' then
   ngx.status = ngx.HTTP_BAD_REQUEST;
@@ -70,8 +69,6 @@ if hmacKey ~= authorizationKey then
   return ngx.exit(ngx.OK);
 end
 
-print("Authorization OK");
-
 -- check timestamp
 
 local json = cjson.decode(data);
@@ -81,8 +78,6 @@ if not ts then
   ngx.status = ngx.HTTP_BAD_REQUEST;
   return ngx.exit(ngx.OK);
 end
-
-print(string.format("timestamp %s", ts));
 
 local y, M, d, h, m, s, sss = ts:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
 local time = os.time{year=y, month=M, day=d, hour=h, min=m, sec=s};
@@ -98,8 +93,6 @@ if currentTime - time > 60 * 60 then
   ngx.say("ERROR: timestamp timeout");
   return ngx.exit(ngx.OK);
 end
-
-print("Timestamp OK");
 
 -- mysql
 
@@ -120,7 +113,6 @@ if not ok then
 end
 
 local jsonData = json["data"];
-print("JSON DATA TYPE", type(jsonData));
 if type(jsonData) ~= "table" or type(jsonData[1]) ~= "table"  then
 	-- ngx.log(ngx.ERR, string.format("ERROR: no data array in body"));
   ngx.status = ngx.HTTP_BAD_REQUEST;
@@ -175,11 +167,9 @@ for i,v in ipairs(queryArgs) do
   queryValueString = queryValueString .. v;
 end;
 
-print("connected to mysql");
-
 local query = "INSERT INTO logs (os_version, locale, os_ts, fresh_install, entry_type, current_version, prev_version, new_install) values ";
 query = query .. queryValueString;
-print("query: ", query);
+print("mysql query: ", query);
 local res, err, errcode, sqlstate = db:query(query);
 if not res then
 	ngx.log(ngx.ERR, string.format("bad result: %s : %s : %s", err, errcode, sqlstate));
