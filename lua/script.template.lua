@@ -84,13 +84,13 @@ end
 
 print(string.format("timestamp %s", ts));
 
-local y, m, d, h, M, s, n = ts:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
-local time = os.time{year=y, month=m, day=d, hour=h, min=M, sec=s};
+local y, M, d, h, m, s, sss = ts:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
+local time = os.time{year=y, month=M, day=d, hour=h, min=m, sec=s};
 local currentTime = os.time(os.date("!*t"));
 print(string.format("currentTime (%s), time (%s)", currentTime, time));
 
 -- https://mariadb.com/kb/en/timestamp/
-local tsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, m, d, h, M, s);
+local tsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, M, d, h, m, s);
 --
 
 if currentTime - time > 60 * 60 then
