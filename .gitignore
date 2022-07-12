@@ -2,3 +2,5 @@
 **/*.swp
 
 lua/script.lua
+
+test*.txt

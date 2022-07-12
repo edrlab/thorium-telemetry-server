@@ -1,8 +1,7 @@
 const { createHmac } =require("crypto");
 const { spawn } = require('node:child_process');
 
-
-const bat = spawn('node', ['body.js']);
+const bat = spawn('node', [process.argv[2] || 'body.js']);
 
 bat.stdout.on('data', (data) => {
   process.stdout.write(`${telemetryHmac(data.toString())} ${data.toString()}`);

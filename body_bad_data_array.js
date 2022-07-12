@@ -9,7 +9,7 @@ const info = {
 	prev_version: '0.1.2',
 };
 
-const data = {timestamp: new Date().toISOString(), data: [info, info, info]};
+const data = {timestamp: new Date().toISOString(), data: info};
 
 process.stdout.write(JSON.stringify(data));
 

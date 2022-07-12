@@ -10,17 +10,10 @@ local DB_USER = "${DB_USER}";
 local DB_PASS = "${DB_PASS}";
 
 -- https://gist.github.com/punkael/107b9fbbce47a09e9d7e
-function bind(sql, ... )
-  local clean = {}
-  local arg={...} 
-  sql = string.gsub(sql, "?", "%%s", 20) 
-  for i,v in ipairs(arg) do
-    clean[i] = ngx.quote_sql_str(ngx.unescape_uri(v)) 
-  end
-  sql = string.format(sql, unpack(clean))
-    return sql
+
+function escapeSqlQuery(text)
+  return ngx.quote_sql_str(ngx.unescape_uri(text));
 end
---
 
 local db, err = mysql:new()
 if not db then
@@ -39,7 +32,6 @@ if authorizationHeader == nil or authorizationHeader == '' then
 end
 
 local authorizationKey = string.match(authorizationHeader, "EDRLAB (.*)")
--- print(string.format("Authorization key: %s", authorizationKey));
 
 if authorizationKey == nil or authorizationKey == '' then
   ngx.status = ngx.HTTP_BAD_REQUEST;
@@ -77,8 +69,6 @@ if hmacKey ~= authorizationKey then
   return ngx.exit(ngx.OK);
 end
 
-print("Authorization OK");
-
 -- check timestamp
 
 local json = cjson.decode(data);
@@ -89,15 +79,13 @@ if not ts then
   return ngx.exit(ngx.OK);
 end
 
-print(string.format("timestamp %s", ts));
-
-local y, m, d, h, M, s, n = ts:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
-local time = os.time{year=y, month=m, day=d, hour=h, min=M, sec=s};
+local y, M, d, h, m, s, sss = ts:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
+local time = os.time{year=y, month=M, day=d, hour=h, min=m, sec=s};
 local currentTime = os.time(os.date("!*t"));
 print(string.format("currentTime (%s), time (%s)", currentTime, time));
 
 -- https://mariadb.com/kb/en/timestamp/
-local tsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, m, d, h, M, s);
+local tsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, M, d, h, m, s);
 --
 
 if currentTime - time > 60 * 60 then
@@ -105,8 +93,6 @@ if currentTime - time > 60 * 60 then
   ngx.say("ERROR: timestamp timeout");
   return ngx.exit(ngx.OK);
 end
-
-print("Timestamp OK");
 
 -- mysql
 
@@ -126,34 +112,71 @@ if not ok then
   return ngx.exit(ngx.OK);
 end
 
--- add a keys check
-if not type(json["os_version"]) == "string" and
-  not type(json["locale"]) == "string" and
-  not type(json["fresh"]) == "boolean" and
-  not (json["type"] == "poll" or json["type"] == "error") and
-  not type(json["current_version"]) == "string" and
-  not type(json["prev_version"]) == "string" then
-
+local jsonData = json["data"];
+if type(jsonData) ~= "table" or type(jsonData[1]) ~= "table"  then
+	-- ngx.log(ngx.ERR, string.format("ERROR: no data array in body"));
   ngx.status = ngx.HTTP_BAD_REQUEST;
-  ngx.say("ERROR: body json");
+  ngx.say("ERROR: no data array in body");
   return ngx.exit(ngx.OK);
 end
 
-print("connected to mysql");
+local queryArgs = {};
 
-local osVersion = json["os_version"];
-local locale = json["locale"];
-local osTs = tsDbFormated;
-local freshInstall = json["fresh"] and '1' or '0'; -- boolean
-local entryType = json["type"]; -- poll or error
-local currentVersion = json["current_version"];
-local previousVersion = json["prev_version"];
-local newInstall = previousVersion == "null" and '1' or '0';
+for i,dataValue in ipairs(jsonData) do
+  if not type(dataValue["os_version"]) == "string" or
+    not type(dataValue["locale"]) == "string" or
+    not type(dataValue["timestamp"]) == "string" or
+    not type(dataValue["fresh"]) == "boolean" or
+    not (dataValue["type"] == "poll" or dataValue["type"] == "error") or
+    not type(dataValue["current_version"]) == "string" or
+    not type(dataValue["prev_version"]) == "string"
+  then
 
-local query = bind("INSERT INTO logs (os_version, locale, os_ts, fresh_install, entry_type, current_version, prev_version, new_install) values (?, ?, ?, ?, ?, ?, ?, ?)", osVersion, locale, osTs, freshInstall, entryType, currentVersion, previousVersion, newInstall);
+    ngx.status = ngx.HTTP_BAD_REQUEST;
+    ngx.say("ERROR: body dataValue " .. i);
+    return ngx.exit(ngx.OK);
+  end
+
+  local osVersion = dataValue["os_version"];
+  local locale = dataValue["locale"];
+  local osTs = dataValue["timestamp"];
+  local freshInstall = dataValue["fresh"] and '1' or '0'; -- boolean
+  local entryType = dataValue["type"]; -- poll or error
+  local currentVersion = dataValue["current_version"];
+  local previousVersion = dataValue["prev_version"];
+  local newInstall = previousVersion == "null" and '1' or '0';
+
+  local y, M, d, h, m, s, sss = osTs:match("^(.*)-(.*)-(.*)T(.*):(.*):(.*)%.(.*)Z$");
+  local osTsDbFormated = string.format("%d-%d-%d %d:%d:%d", y, M, d, h, m, s);
+
+  local str = string.format("(%s, %s, %s, %s, %s, %s, %s, %s)",
+      escapeSqlQuery(osVersion),
+      escapeSqlQuery(locale),
+      escapeSqlQuery(osTsDbFormated),
+      escapeSqlQuery(freshInstall),
+      escapeSqlQuery(entryType),
+      escapeSqlQuery(currentVersion),
+      escapeSqlQuery(previousVersion),
+      escapeSqlQuery(newInstall)
+    );
+  table.insert(queryArgs, str);
+
+end
+
+local queryValueString = "";
+for i,v in ipairs(queryArgs) do
+  if queryValueString ~= '' then
+    queryValueString = queryValueString .. ", ";
+  end;
+  queryValueString = queryValueString .. v;
+end;
+
+local query = "INSERT INTO logs (os_version, locale, os_ts, fresh_install, entry_type, current_version, prev_version, new_install) values ";
+query = query .. queryValueString;
+print("mysql query: ", query);
 local res, err, errcode, sqlstate = db:query(query);
 if not res then
-	ngx.log(ngx.ERR, string.format("bad result: %s : %s : %s", err, errcode, sqlstate))
+	ngx.log(ngx.ERR, string.format("bad result: %s : %s : %s", err, errcode, sqlstate));
   ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR;
   return ngx.exit(ngx.OK);
 end
