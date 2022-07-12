@@ -3,7 +3,11 @@
 
 URL="http://localhost:8080"
 URL="https://thorium-telemetry-server-dev-ahltq7u23a-ew.a.run.app"
+URL="https://telemetry.edrlab.org"
+URL="https://telemetry-staging.edrlab.org"
+URL=${1:=URL}
 
+echo "Test on $URL"
 
 CMD="curl -s $URL"
 echo $CMD
